@@ -36,7 +36,7 @@ import { WindowRefService } from "./windowref.service";
                 [style.width.px]="(currentTourStep.selector && selectedElementRect ? calculatedTourStepWidth : null)"
                 [style.transform]="(currentTourStep.selector && selectedElementRect ? transform : null)">
                 <div *ngIf="currentTourStep.selector" class="tour-arrow"></div>
-                <div class="tour-block">
+                <div class="tour-block" [style.width.px]="(currentTourStep.selector && selectedElementRect ? calculatedTourStepWidth : null)">
                     <div *ngIf="
                         progressIndicatorLocation === progressIndicatorLocations.TopOfTourBlock
                         && !guidedTourService.onResizeMessage"
@@ -141,6 +141,10 @@ export class GuidedTourComponent implements AfterViewInit, OnDestroy {
         }
 
         return Math.min(this.maxWidthAdjustmentForTourStep, adjustment);
+    }
+
+    public get calculatedWidth() {
+        return this.tourStepWidth;
     }
 
     public get calculatedTourStepWidth() {
@@ -352,8 +356,14 @@ export class GuidedTourComponent implements AfterViewInit, OnDestroy {
         }
         const adjustment = Math.max(0, -this.calculatedLeftPosition)
         const maxAdjustment = Math.min(this.maxWidthAdjustmentForTourStep, adjustment);
-        return this.calculatedLeftPosition + maxAdjustment;
-    }
+        const res = this.calculatedLeftPosition + maxAdjustment;
+        if (res >= 0) {
+            return this.calculatedLeftPosition + maxAdjustment;
+        }
+        else {
+            return 0;
+        }
+        }
 
     public get orbLeftPosition(): number {
         if (
@@ -430,7 +440,12 @@ export class GuidedTourComponent implements AfterViewInit, OnDestroy {
 
     public get overlayLeft(): number {
         if (this.selectedElementRect) {
-            return this.selectedElementRect.left - this.getHighlightPadding();
+            if (this.selectedElementRect.left - this.getHighlightPadding() >= 0) {
+                return this.selectedElementRect.left - this.getHighlightPadding();
+            }
+            else {
+                return 0;
+            }
         }
         return 0;
     }
@@ -465,9 +480,11 @@ export class GuidedTourComponent implements AfterViewInit, OnDestroy {
         ) {
             return 0;
         }
-
+        let tourStepHeight = 0;
         const scrollAdjustment = this.currentTourStep.scrollAdjustment ? this.currentTourStep.scrollAdjustment : 0;
-        const tourStepHeight = typeof this.tourStep.nativeElement.getBoundingClientRect === 'function' ? this.tourStep.nativeElement.getBoundingClientRect().height : 0;
+        if (this.tourStep !== undefined) {
+            tourStepHeight = typeof this.tourStep.nativeElement.getBoundingClientRect === 'function' ? this.tourStep.nativeElement.getBoundingClientRect().height : 0;
+        }
         const elementHeight = this.selectedElementRect.height + scrollAdjustment + tourStepHeight;
 
         if ((this.windowRef.nativeWindow.innerHeight - this.topOfPageAdjustment) < elementHeight) {
